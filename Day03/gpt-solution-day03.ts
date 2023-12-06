@@ -1,55 +1,42 @@
 import * as fs from 'fs';
 
-function parseSchematic(schematic: string): string[][] {
-    return schematic.split("\n").map(line => line.trim().split(''));
-}
+function sumPartNumbers(schematic: string): number {
+    const grid = schematic.split("\n").map(line => line.trim().split(''));
+    const symbolSet = new Set();
+    let sum = 0;
 
-function isSymbol(char: string): boolean {
-    return isNaN(parseInt(char)) && char !== '.';
-}
-
-function isAdjacentToSymbol(grid: string[][], row: number, col: number): boolean {
-    const directions = [
-        [-1, -1], [-1, 0], [-1, 1],
-        [0, -1],           [0, 1],
-        [1, -1], [1, 0], [1, 1]
-    ];
-
-    for (let [dr, dc] of directions) {
-        const newRow = row + dr;
-        const newCol = col + dc;
-
-        if (newRow >= 0 && newRow < grid.length && newCol >= 0 && newCol < grid[0].length) {
-            if (isSymbol(grid[newRow][newCol])) {
-                return true;
+    // Precompute the locations of all symbols
+    for (let row = 0; row < grid.length; row++) {
+        for (let col = 0; col < grid[row].length; col++) {
+            if (isNaN(parseInt(grid[row][col])) && grid[row][col] !== '.') {
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        let newRow = row + dr, newCol = col + dc;
+                        if (newRow >= 0 && newRow < grid.length && newCol >= 0 && newCol < grid[row].length) {
+                            symbolSet.add(`${newRow},${newCol}`);
+                        }
+                    }
+                }
             }
         }
     }
-    return false;
-}
 
-function sumPartNumbers(schematic: string): number {
-    const grid = parseSchematic(schematic);
-    let sum = 0;
-    let checkedPositions = new Set<string>();
-
+    // Iterate over the grid to sum part numbers
     for (let row = 0; row < grid.length; row++) {
         for (let col = 0; col < grid[row].length; col++) {
-            if (!isNaN(parseInt(grid[row][col])) && !checkedPositions.has(`${row},${col}`)) {
+            if (!isNaN(parseInt(grid[row][col]))) {
                 let numberStr = '';
                 let tempCol = col;
-
                 while (tempCol < grid[row].length && !isNaN(parseInt(grid[row][tempCol]))) {
                     numberStr += grid[row][tempCol];
-                    checkedPositions.add(`${row},${tempCol}`);
                     tempCol++;
                 }
 
-                if (numberStr.split('').some((_, idx) => isAdjacentToSymbol(grid, row, col + idx))) {
+                if (isAdjacentToSymbol(symbolSet, row, col, tempCol - 1)) {
                     sum += parseInt(numberStr);
                 }
 
-                col = tempCol - 1;
+                col = tempCol - 1; // Skip the rest of the number
             }
         }
     }
@@ -57,13 +44,19 @@ function sumPartNumbers(schematic: string): number {
     return sum;
 }
 
-const schematicFile = 'input.txt';
+function isAdjacentToSymbol(symbolSet, row, startCol, endCol) {
+    for (let col = startCol; col <= endCol; col++) {
+        if (symbolSet.has(`${row},${col}`)) {
+            return true;
+        }
+    }
+    return false;
+}
 
-fs.readFile(schematicFile, 'utf8', (err, data) => {
+fs.readFile('input.txt', 'utf8', (err, data) => {
     if (err) {
         console.error(`Error reading file: ${err}`);
         return;
     }
     console.log(`Total sum of part numbers: ${sumPartNumbers(data)}`);
 });
-
