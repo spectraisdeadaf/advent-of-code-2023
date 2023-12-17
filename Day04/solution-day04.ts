@@ -34,4 +34,3 @@ function calculateTotalPoints(filePath: string): number {
 
 const totalPoints = calculateTotalPoints('input.txt');
 console.log(`Total Points: ${totalPoints}`);
-
